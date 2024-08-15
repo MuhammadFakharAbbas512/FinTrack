@@ -4,7 +4,8 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const path = require('path');
-const authRoutes = require('./routes/authRoutes'); // Import the routes
+const authRoutes = require('./routes/authRoutes'); 
+const transactionRoutes = require('./routes/transactionRoutes');
 
 const app = express();
 const port = 3000;
@@ -22,8 +23,11 @@ mongoose.connect('mongodb://localhost:27017/Auth', {}).then(() => {
   console.error('Failed to connect to MongoDB', err);
 });
 
-// Use the routes
+//  auth routes
 app.use('/', authRoutes);
+
+//  transaction routes
+app.use('/api/transactions', transactionRoutes);
 
 // Home route
 app.get('/', (req, res) => {

@@ -99,7 +99,9 @@ router.post('/login', async (req, res) => {
 router.get('/users', async (req, res) => {
   try {
     const users = await User.find({}, 'username phoneNumber email'); // hide password hashes from the response
+    console.log('Users: ')
     res.json(users);
+    console.log(users);
   } catch (error) {
     res.status(500).send('Error fetching users');
   }
