@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Income Records</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .button-container button {
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .navigate-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #3182ce;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-top: 20px;
+        }
+
+        .navigate-button:hover {
+            background-color: #2b6cb0;
+        }
+
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .pagination button {
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Income Records</h1>
+    <button class="navigate-button" onclick="window.location.href='income.html'">Back to Add Income</button>
+
+    <table id="income-table">
+        <thead>
+            <tr>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Income records will be inserted here -->
+        </tbody>
+    </table>
+
+ <!-- Pagination -->
+    <div class="pagination">
+        <button id="prev-page" onclick="changePage(-1)">Previous</button>
+        <button id="next-page" onclick="changePage(1)">Next</button>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit Income Record</h2>
+            <form id="edit-form">
+                <input type="hidden" id="edit-id">
+                <label for="edit-amount">Amount:</label>
+                <input type="number" id="edit-amount" required>
+                <label for="edit-date">Date:</label>
+                <input type="date" id="edit-date" required>
+                <label for="edit-category">Category:</label>
+                <input type="text" id="edit-category" required>
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        let currentPage = 1;
+        const recordsPerPage = 2;
+
+        async function fetchIncomeRecords(page = 1) {
+            try {
+                const response = await fetch(`/api/transactions/income?page=${page}&limit=${recordsPerPage}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    const { records, totalPages } = await response.json();
+                    displayIncomeRecords(records);
+                    updatePaginationControls(page, totalPages);
+                 } else {
+                    const error = await response.json();
+                    console.error('Error fetching income records:', error.message);
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+            }
+        }
+
+        function displayIncomeRecords(records) {
+            const incomeTableBody = document.getElementById('income-table').querySelector('tbody');
+            incomeTableBody.innerHTML = ''; // Clear any existing records
+
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.amount}</td>
+                    <td>${record.date}</td>
+                    <td>${record.category}</td>
+                    <td>
+                        <div class="button-container">
+                            <button onclick="openEditModal('${record._id}', '${record.amount}', '${record.date}', '${record.category}')">Edit</button>
+                            <button onclick="deleteRecord('${record._id}')">Delete</button>
+                        </div>
+                    </td>
+                `;
+                incomeTableBody.appendChild(row);
+            });
+        }
+        function updatePaginationControls(page, totalPages) {
+            document.getElementById('prev-page').disabled = page <= 1;
+            document.getElementById('next-page').disabled = page >= totalPages;
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            fetchIncomeRecords(currentPage);
+        }
+
+        function openEditModal(id, amount, date, category) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-amount').value = amount;
+            document.getElementById('edit-date').value = date;
+            document.getElementById('edit-category').value = category;
+            document.getElementById('editModal').style.display = 'block';
+        }
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('editModal')) {
+                document.getElementById('editModal').style.display = 'none';
+            }
+        }
+        document.getElementById('edit-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const amount = document.getElementById('edit-amount').value;
+            const date = document.getElementById('edit-date').value;
+            const category = document.getElementById('edit-category').value;
+
+            try {
+                const response = await fetch(`/api/transactions/income/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount, date, category })
+                });
+
+                if (response.ok) {
+                    alert('Record updated successfully');
+                    document.getElementById('editModal').style.display = 'none';
+                    fetchIncomeRecords(); // Refresh the list
+                } else {
+                    const error = await response.json();
+                    console.error('Error updating record:', error.message);
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+            }
+        });
+
+        async function editRecord(id) {
+            // Implement the logic to edit the record
+            console.log('Edit record with ID:', id);
+        }
+
+        async function deleteRecord(id) {
+            try {
+                const response = await fetch(`/api/transactions/income/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    alert('Record deleted successfully');
+                    fetchIncomeRecords(); // Refresh the list
+                } else {
+                    const error = await response.json();
+                    console.error('Error deleting record:', error.message);
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+            }
+        }
+
+        // Fetch and display income records when the page loads
+        fetchIncomeRecords();
+        fetchIncomeRecords(currentPage);
+    </script>
+</body>
+</html>

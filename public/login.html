@@ -101,7 +101,7 @@
                 localStorage.setItem('token', result.token);
                 messageElement.style.color = 'green';
                 setTimeout(() => {
-                        window.location.href = '/get';
+                        window.location.href = 'dashboard.html'//  '/get';
                     }, 5000); // Redirect after 2 seconds
             } else {
                 messageElement.textContent = result;

@@ -11,8 +11,33 @@ router.post('/income', async (req, res) => {
 });
 
 router.get('/income', async (req, res) => {
-  const incomes = await Income.find();
-  res.send(incomes);
+  const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 2;
+    const skip = (page - 1) * limit;
+
+    try {
+        const totalRecords = await Income.countDocuments();
+        const totalPages = Math.ceil(totalRecords / limit);
+        const records = await Income.find().skip(skip).limit(limit);
+
+        res.json({ records, totalPages });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+router.put('/income/:id', async (req, res) => {
+  const { id } = req.params;
+  const { amount, date, category } = req.body;
+  const income = await Income.findByIdAndUpdate(id, { amount, date, category }, { new: true });
+  res.send(income);
+});
+
+router.delete('/income/:id', async (req, res) => {
+  const { id } = req.params;
+  await Income.findByIdAndDelete(id);
+  res.status(204).send();
+  console.log('Income deleted successfully');
 });
 
 // Expense routes
